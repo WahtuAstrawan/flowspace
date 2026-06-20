@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  priority    String    @default("medium")
+  status      String    @default("active")
+  dueDate     DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+}
+
+model PomodoroSession {
+  id          String   @id @default(uuid())
+  type        String   
+  duration    Int      
+  elapsed     Int      
+  completed   Boolean  @default(false)
+  startedAt   DateTime
+  endedAt     DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String?
+  content   String
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Track {
+  id             String          @id @default(uuid())
+  filename       String          @unique
+  title          String
+  artist         String?
+  duration       Int             
+  fileSize       Int             
+  uploadedAt     DateTime        @default(now())
+  playlistTracks PlaylistTrack[]
+}
+
+model Playlist {
+  id        String          @id @default(uuid())
+  name      String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  tracks    PlaylistTrack[]
+}
+
+model PlaylistTrack {
+  id         String   @id @default(uuid())
+  playlistId String
+  trackId    String
+  sortOrder  Int      @default(0)
+  addedAt    DateTime @default(now())
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  track    Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, trackId])
+}
+
+model DailyStats {
+  id                String   @id @default(uuid())
+  date              String   @unique 
+  focusMinutes      Int      @default(0)
+  pomodoroSessions  Int      @default(0)
+  tasksCompleted    Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
