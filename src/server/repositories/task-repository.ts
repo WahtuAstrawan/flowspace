@@ -1,31 +1,16 @@
+import { prisma } from "../db/prisma-client";
+
 import {
   Task,
   CreateTaskPayload,
   UpdateTaskPayload,
-} from "../../core/entities/task";
-
-export interface ITaskRepository {
-  findById(id: string): Promise<Task | null>;
-  findActiveTasks(): Promise<Task[]>;
-  findCompletedTasksByDate(date: Date): Promise<Task[]>;
-  create(payload: CreateTaskPayload): Promise<Task>;
-  update(id: string, payload: UpdateTaskPayload): Promise<Task>;
-  delete(id: string): Promise<void>;
-  updateSortOrders(tasks: { id: string; sortOrder: number }[]): Promise<void>;
-}
-
-import { prisma } from "../db/prisma-client";
+  ITaskRepository,
+} from "@/src/core/entities/task";
 
 export class TaskRepository implements ITaskRepository {
   async findById(id: string): Promise<Task | null> {
-    const task = await prisma.task.findUnique({
-      where: { id },
-    });
-
-    if (!task) {
-      console.warn(`Task with ID ${id} not found in the database.`);
-      return null;
-    }
+    const task = await prisma.task.findUnique({ where: { id } });
+    if (!task) return null;
 
     return {
       ...task,
@@ -34,9 +19,12 @@ export class TaskRepository implements ITaskRepository {
     };
   }
 
-  async findActiveTasks(): Promise<Task[]> {
+  async findActiveTasksByWorkspace(workspaceId: string): Promise<Task[]> {
     const tasks = await prisma.task.findMany({
-      where: { status: "active" },
+      where: {
+        workspaceId: workspaceId,
+        status: "active",
+      },
       orderBy: { sortOrder: "asc" },
     });
 
@@ -47,12 +35,16 @@ export class TaskRepository implements ITaskRepository {
     }));
   }
 
-  async findCompletedTasksByDate(date: Date): Promise<Task[]> {
+  async findCompletedTasksByDateAndWorkspace(
+    date: Date,
+    workspaceId: string,
+  ): Promise<Task[]> {
     const startOfDay = new Date(date.setHours(0, 0, 0, 0));
     const endOfDay = new Date(date.setHours(23, 59, 59, 999));
 
     const tasks = await prisma.task.findMany({
       where: {
+        workspaceId: workspaceId,
         status: "completed",
         completedAt: {
           gte: startOfDay,
@@ -70,17 +62,12 @@ export class TaskRepository implements ITaskRepository {
   }
 
   async create(payload: CreateTaskPayload): Promise<Task> {
-    console.info(`Inserting new task into database: ${payload.title}`);
+    console.info(
+      `Inserting new task into workspace ${payload.workspaceId}: ${payload.title}`,
+    );
 
     const newTask = await prisma.task.create({
-      data: {
-        title: payload.title,
-        description: payload.description,
-        priority: payload.priority,
-        status: payload.status,
-        dueDate: payload.dueDate,
-        sortOrder: payload.sortOrder,
-      },
+      data: payload,
     });
 
     return {
