@@ -5,7 +5,7 @@ import {
   SaveSettingPayload,
 } from "@/src/core/entities/setting";
 
-export class PrismaSettingRepository implements ISettingRepository {
+export class SettingRepository implements ISettingRepository {
   async findAllByWorkspace(workspaceId: string): Promise<AppSetting[]> {
     return prisma.setting.findMany({
       where: { workspaceId },
