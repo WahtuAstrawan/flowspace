@@ -1,38 +1,39 @@
 Phase 1: Foundation & Clean Architecture Setup
 Fokus di fase ini adalah menyiapkan environment dan struktur folder yang maintainable.
 Step 1.1: Inisialisasi proyek Next.js 14 dengan TypeScript dan Tailwind CSS.
-Step 1.2: Menyiapkan struktur folder Clean Architecture (src/domain, src/infrastructure, src/application, src/presentation).
-Step 1.3: Konfigurasi Prisma ORM dengan SQLite dan mengimplementasikan skema database sesuai PRD (Bagian 15).
+Step 1.2: Menyiapkan struktur folder Clean Architecture (src/core, src/server, src/client, src/app).
+Step 1.3: Konfigurasi Prisma ORM dengan SQLite. Mengimplementasikan skema database dengan `Workspace` sebagai entitas sentral. Memastikan semua entitas lain memiliki `workspaceId` (Foreign Key), dan menambahkan `startTime` serta `endTime` pada entitas `Task` untuk fondasi timeboxing v1.2.
 Step 1.4: Menyiapkan Docker dan Docker Compose untuk local development agar identik dengan environment produksi.
 
 Phase 2: Core Infrastructure & Repository Pattern
-Kita akan memisahkan logika database dari aplikasi agar jika suatu saat kamu mengganti Prisma dengan teknologi lain, komponen UI dan bisnis logikamu tidak perlu diubah.
-Step 2.1: Membuat Repository Interfaces untuk Tasks, Notes, Pomodoro, dan Music.
-Step 2.2: Mengimplementasikan Prisma Repositories (contoh: TaskRepositoryImpl).
-Step 2.3: Menulis unit test sederhana untuk memastikan repositori berjalan dengan baik (opsional tapi sangat disarankan untuk standar industri).
+Pemisahan logika database dari aplikasi. Repositori harus secara ketat menerapkan isolasi data dan mematuhi prinsip Clean Architecture (selalu mengembalikan Entitas murni, bukan bentuk transformasi UI).
+Step 2.1: Membuat Repository Interfaces untuk Workspace, Tasks, Notes, Pomodoro, Music, dan Settings.
+Step 2.2: Mengimplementasikan Prisma Repositories. Semua operasi (Create, Read, Update, Delete) selain Workspace wajib memvalidasi parameter `workspaceId` untuk mencegah kebocoran data antar-workspace.
+Step 2.3: Menulis unit test menggunakan Vitest dengan mocking Prisma untuk memastikan repositori berjalan dengan baik tanpa menyentuh database asli.
 
 Phase 3: Application Layer (Server Actions) & State Management
-Fase ini menghubungkan database dengan UI melalui Server Actions, dan menyiapkan Zustand untuk state yang butuh reaktivitas tinggi (seperti timer).
-Step 3.1: Membuat Server Actions untuk operasi CRUD (Tasks, Notes).
-Step 3.2: Menyiapkan global store menggunakan Zustand untuk PomodoroStore dan MusicStore.
-Step 3.3: Menyiapkan SettingsStore yang tersinkronisasi dengan local storage atau database.
+Fase ini menghubungkan database dengan UI melalui Server Actions, dan menyiapkan global state di client.
+Step 3.1: Membuat Server Actions untuk operasi CRUD (Workspace, Tasks, Notes, Settings). Di sinilah transformasi dari Entitas (misal: array Settings) ke struktur UI (misal: Record/Map) dilakukan.
+Step 3.2: Menyiapkan global store menggunakan Zustand. Membuat `WorkspaceStore` untuk menyimpan `activeWorkspaceId`. `PomodoroStore` dan `MusicStore` nantinya akan bereaksi terhadap perubahan ID ini.
+Step 3.3: Menyiapkan `SettingsStore` yang tersinkronisasi per-workspace melalui Server Actions.
 
 Phase 4: UI Development (Design System & Layout)
-Membangun fondasi visual aplikasi dengan Tailwind CSS berdasarkan pedoman desain hitam-putih di PRD.
+Membangun fondasi visual aplikasi dengan Tailwind CSS berdasarkan pedoman desain hitam-putih.
 Step 4.1: Mengonfigurasi Tailwind (custom colors, typography Poppins).
 Step 4.2: Membangun reusable UI components (Button, Input, Modal, Card).
-Step 4.3: Membuat struktur layout utama (Sidebar dan Main Content Area).
+Step 4.3: Membuat struktur layout utama. Menambahkan Workspace Switcher (Dropdown) di bagian Header atau Sidebar.
 
 Phase 5: Feature Implementation (Iterative)
-Membangun fitur satu per satu dari backend ke frontend.
-Step 5.1 - Tasks: Implementasi TaskWidget, drag-and-drop, filter hari ini.
-Step 5.2 - Pomodoro: Implementasi timer logic di Zustand, sinkronisasi dengan database untuk statistik.
-Step 5.3 - Notes: Implementasi Markdown editor dan sistem pinning.
-Step 5.4 - Music: Mengatur file upload dengan Node.js fs, membuat endpoint streaming dengan dukungan HTTP Range requests, dan membuat audio player kustom di React.
-Step 5.5 - Statistics: Kalkulasi streak dan agregasi data mingguan.
+Membangun fitur satu per satu dari backend ke frontend, dengan selalu merujuk pada `activeWorkspaceId`.
+Step 5.1 - Workspace: Implementasi logika pembuatan default workspace saat pertama kali aplikasi dijalankan, dan fungsionalitas UI switcher.
+Step 5.2 - Tasks: Implementasi TaskWidget, drag-and-drop, filter hari ini. (Catatan: UI Timeboxing ditunda ke v1.2, fokus pada CRUD dasar).
+Step 5.3 - Pomodoro: Implementasi timer logic di Zustand, sinkronisasi dengan database untuk statistik harian per-workspace.
+Step 5.4 - Notes: Implementasi Markdown editor dan sistem pinning.
+Step 5.5 - Music: Mengatur file upload dengan Node.js fs, endpoint streaming dengan HTTP Range requests, dan audio player kustom.
+Step 5.6 - Statistics: Kalkulasi streak dan agregasi data mingguan spesifik untuk workspace yang sedang aktif.
 
 Phase 6: Finalization & Offline Strategy
 Memastikan aplikasi sesuai dengan filosofi "Offline First" dan bebas bug.
 Step 6.1: Mengaudit fungsionalitas aplikasi saat jaringan diputus.
 Step 6.2: Menambahkan error handling dan loading states yang robust.
-Step 6.3: Final build dan testing di dalam container Docker.
+Step 6.3: Final build (menggunakan standalone output) dan testing di dalam container Docker.
