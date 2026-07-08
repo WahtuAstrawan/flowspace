@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: flowspace_app
+    ports:
+      - "3000:3000"
+    volumes:
+      - flowspace_db:/app/data
+      - flowspace_music:/app/storage/music
+    environment:
+      - DATABASE_URL=file:/app/data/flowspace.db
+      - MUSIC_STORAGE_PATH=/app/storage/music
+      - MUSIC_MAX_UPLOAD_MB=50
+    restart: unless-stopped
+
+volumes:
+  flowspace_db:
+    driver: local
+  flowspace_music:
+    driver: local

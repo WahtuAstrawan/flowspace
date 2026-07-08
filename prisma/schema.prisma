@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks            Task[]
+  pomodoroSessions PomodoroSession[]
+  notes            Note[]
+  tracks           Track[]
+  playlists        Playlist[]
+  dailyStats       DailyStats[]
+  settings         Setting[]
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  priority    String    @default("medium")
+  status      String    @default("active")
+  dueDate     DateTime?
+  startTime   DateTime?
+  endTime     DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model PomodoroSession {
+  id          String   @id @default(uuid())
+  type        String   
+  duration    Int      
+  elapsed     Int      
+  completed   Boolean  @default(false)
+  startedAt   DateTime
+  endedAt     DateTime?
+  createdAt   DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String?
+  content   String
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model Track {
+  id             String          @id @default(uuid())
+  filename       String          
+  title          String
+  artist         String?
+  duration       Int             
+  fileSize       Int             
+  uploadedAt     DateTime        @default(now())
+  playlistTracks PlaylistTrack[]
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([filename, workspaceId])
+}
+
+model Playlist {
+  id        String          @id @default(uuid())
+  name      String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  tracks    PlaylistTrack[]
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model PlaylistTrack {
+  id         String   @id @default(uuid())
+  playlistId String
+  trackId    String
+  sortOrder  Int      @default(0)
+  addedAt    DateTime @default(now())
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  track    Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, trackId])
+}
+
+model DailyStats {
+  id                String   @id @default(uuid())
+  date              String   
+  focusMinutes      Int      @default(0)
+  pomodoroSessions  Int      @default(0)
+  tasksCompleted    Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([date, workspaceId])
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   
+  value     String
+  updatedAt DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([key, workspaceId])
+}
